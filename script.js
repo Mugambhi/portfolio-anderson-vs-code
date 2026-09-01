@@ -1,40 +1,8 @@
 "use strict";
 
-/**
- * Portfólio de Anderson Mugambhi
- * Animações sem bibliotecas externas.
- *
- * Recursos:
- * - texto digitado;
- * - partículas no canvas;
- * - revelação ao rolar;
- * - menu responsivo;
- * - indicador da seção ativa;
- * - efeito de inclinação nos cartões;
- * - brilho que acompanha o cursor;
- * - cópia segura dos dados de contato.
- */
-
 (() => {
-  const SELECTORS = Object.freeze({
-    body: "body",
-    header: ".site-header",
-    menuToggle: "#menuToggle",
-    navigationLinks: "#navigationLinks",
-    navigationLink: ".navigation__link",
-    section: "main section[id]",
-    reveal: ".reveal",
-    typewriterText: "#typewriterText",
-    particleCanvas: "#particleCanvas",
-    cursorGlow: "#cursorGlow",
-    tiltCard: ".tilt-card",
-    magnetic: ".magnetic",
-    copyButton: ".copy-button",
-    currentYear: "#currentYear",
-  });
-
   const SETTINGS = Object.freeze({
-    typewriterWords: [
+    words: [
       "Programador",
       "Desenvolvedor Web",
       "Criador de soluções",
@@ -42,677 +10,461 @@
     ],
     typingSpeed: 82,
     deletingSpeed: 42,
-    wordPause: 1350,
-    revealThreshold: 0.14,
-    headerScrollLimit: 22,
-    tiltMaximum: 7,
-    particleConnectionDistance: 128,
-    maximumParticles: 74,
+    wordPause: 1_350,
+    maximumTilt: 7,
+    maximumParticles: 48,
+    connectionDistance: 120,
+    particleFrameInterval: 1_000 / 30,
   });
 
-  const USER_PREFERS_REDUCED_MOTION = window.matchMedia(
+  const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)",
   ).matches;
+  const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
+  const select = (selector, context = document) => context.querySelector(selector);
+  const selectAll = (selector, context = document) =>
+    Array.from(context.querySelectorAll(selector));
+  const clamp = (value, minimum, maximum) =>
+    Math.min(Math.max(value, minimum), maximum);
 
-  /**
-   * Busca um elemento e retorna null quando ele não existe.
-   * @param {string} selector
-   * @param {ParentNode} context
-   * @returns {Element|null}
-   */
-  function select(selector, context = document) {
-    return context.querySelector(selector);
-  }
-
-  /**
-   * Busca todos os elementos e converte NodeList para Array.
-   * @param {string} selector
-   * @param {ParentNode} context
-   * @returns {Element[]}
-   */
-  function selectAll(selector, context = document) {
-    return Array.from(context.querySelectorAll(selector));
-  }
-
-  /**
-   * Limita um valor numérico a um intervalo.
-   * @param {number} value
-   * @param {number} minimum
-   * @param {number} maximum
-   * @returns {number}
-   */
-  function clamp(value, minimum, maximum) {
-    return Math.min(Math.max(value, minimum), maximum);
-  }
-
-  /**
-   * Executa uma funcionalidade sem permitir que um erro isolado
-   * impeça o restante do site de funcionar.
-   * @param {string} featureName
-   * @param {Function} initializer
-   */
-  function safelyInitialize(featureName, initializer) {
+  function safeInitialize(name, initializer) {
     try {
       initializer();
     } catch (error) {
-      console.error(`[Portfólio] Falha ao iniciar ${featureName}:`, error);
+      console.error(`[Portfólio] Falha ao iniciar ${name}:`, error);
     }
   }
 
-  function initializePageState() {
-    const body = select(SELECTORS.body);
+  function initializePage() {
+    requestAnimationFrame(() => document.body.classList.add("page-loaded"));
+    const year = select("#currentYear");
+    if (year) year.textContent = String(new Date().getFullYear());
+  }
 
-    if (!body) {
-      return;
-    }
+  function initializeHeader() {
+    const header = select(".site-header");
+    if (!header) return;
 
-    window.requestAnimationFrame(() => {
-      body.classList.add("page-loaded");
+    let scheduled = false;
+    const update = () => {
+      header.classList.toggle("is-scrolled", window.scrollY > 22);
+      scheduled = false;
+    };
+    const scheduleUpdate = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(update);
+    };
+
+    update();
+    addEventListener("scroll", scheduleUpdate, { passive: true });
+  }
+
+  function initializeMenu() {
+    const toggle = select("#menuToggle");
+    const linksContainer = select("#navigationLinks");
+    if (!toggle || !linksContainer) return;
+
+    const setOpen = (open) => {
+      toggle.classList.toggle("is-active", open);
+      linksContainer.classList.toggle("is-open", open);
+      document.body.classList.toggle("menu-open", open);
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", open ? "Fechar menu" : "Abrir menu");
+    };
+
+    toggle.addEventListener("click", () => {
+      setOpen(toggle.getAttribute("aria-expanded") !== "true");
     });
-  }
-
-  function initializeCurrentYear() {
-    const yearElement = select(SELECTORS.currentYear);
-
-    if (!yearElement) {
-      return;
-    }
-
-    yearElement.textContent = String(new Date().getFullYear());
-  }
-
-  function initializeHeaderState() {
-    const header = select(SELECTORS.header);
-
-    if (!header) {
-      return;
-    }
-
-    let ticking = false;
-
-    const updateHeader = () => {
-      header.classList.toggle(
-        "is-scrolled",
-        window.scrollY > SETTINGS.headerScrollLimit,
-      );
-      ticking = false;
-    };
-
-    const handleScroll = () => {
-      if (ticking) {
-        return;
-      }
-
-      ticking = true;
-      window.requestAnimationFrame(updateHeader);
-    };
-
-    updateHeader();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-  }
-
-  function initializeMobileMenu() {
-    const body = select(SELECTORS.body);
-    const menuToggle = select(SELECTORS.menuToggle);
-    const navigationLinks = select(SELECTORS.navigationLinks);
-
-    if (!body || !menuToggle || !navigationLinks) {
-      return;
-    }
-
-    const setMenuState = (shouldOpen) => {
-      menuToggle.classList.toggle("is-active", shouldOpen);
-      navigationLinks.classList.toggle("is-open", shouldOpen);
-      body.classList.toggle("menu-open", shouldOpen);
-      menuToggle.setAttribute("aria-expanded", String(shouldOpen));
-      menuToggle.setAttribute(
-        "aria-label",
-        shouldOpen ? "Fechar menu" : "Abrir menu",
-      );
-    };
-
-    menuToggle.addEventListener("click", () => {
-      const isOpen = menuToggle.getAttribute("aria-expanded") === "true";
-      setMenuState(!isOpen);
-    });
-
-    navigationLinks.addEventListener("click", (event) => {
-      if (event.target.closest("a")) {
-        setMenuState(false);
+    linksContainer.addEventListener("click", (event) => {
+      if (event.target instanceof Element && event.target.closest("a")) {
+        setOpen(false);
       }
     });
-
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        setMenuState(false);
-      }
+      if (event.key === "Escape") setOpen(false);
     });
+    const desktopQuery = window.matchMedia("(min-width: 901px)");
+    const closeOnDesktop = (event) => {
+      if (event.matches) setOpen(false);
+    };
 
-    window.addEventListener("resize", () => {
-      if (window.innerWidth > 900) {
-        setMenuState(false);
-      }
-    });
+    if (desktopQuery.addEventListener) {
+      desktopQuery.addEventListener("change", closeOnDesktop);
+    } else {
+      desktopQuery.addListener(closeOnDesktop);
+    }
   }
 
-  function initializeRevealAnimations() {
-    const revealElements = selectAll(SELECTORS.reveal);
+  function initializeReveal() {
+    const elements = selectAll(".reveal");
+    if (!elements.length) return;
 
-    if (revealElements.length === 0) {
-      return;
-    }
-
-    if (USER_PREFERS_REDUCED_MOTION || !("IntersectionObserver" in window)) {
-      revealElements.forEach((element) => element.classList.add("is-visible"));
+    if (prefersReducedMotion || !("IntersectionObserver" in window)) {
+      elements.forEach((element) => element.classList.add("is-visible"));
       return;
     }
 
     const observer = new IntersectionObserver(
       (entries, currentObserver) => {
         entries.forEach((entry) => {
-          if (!entry.isIntersecting) {
-            return;
-          }
-
+          if (!entry.isIntersecting) return;
           entry.target.classList.add("is-visible");
           currentObserver.unobserve(entry.target);
         });
       },
-      {
-        threshold: SETTINGS.revealThreshold,
-        rootMargin: "0px 0px -40px 0px",
-      },
+      { threshold: 0.14, rootMargin: "0px 0px -40px" },
     );
-
-    revealElements.forEach((element) => observer.observe(element));
+    elements.forEach((element) => observer.observe(element));
   }
 
   function initializeActiveNavigation() {
-    const sections = selectAll(SELECTORS.section);
-    const links = selectAll(SELECTORS.navigationLink);
+    if (!("IntersectionObserver" in window)) return;
+    const sections = selectAll("main section[id]");
+    const links = selectAll(".navigation__link");
+    if (!sections.length || !links.length) return;
 
-    if (sections.length === 0 || links.length === 0) {
-      return;
-    }
-
-    const linksBySectionId = new Map(
-      links.map((link) => {
-        const sectionId = link.getAttribute("href")?.replace("#", "");
-        return [sectionId, link];
-      }),
-    );
-
-    const activateLink = (sectionId) => {
-      links.forEach((link) => link.classList.remove("is-active"));
-      linksBySectionId.get(sectionId)?.classList.add("is-active");
-    };
-
-    if (!("IntersectionObserver" in window)) {
-      return;
-    }
-
+    const linksById = new Map(links.map((link) => [link.hash.slice(1), link]));
     const observer = new IntersectionObserver(
       (entries) => {
-        const visibleEntries = entries
+        const activeEntry = entries
           .filter((entry) => entry.isIntersecting)
-          .sort((first, second) => second.intersectionRatio - first.intersectionRatio);
+          .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
+        if (!activeEntry) return;
 
-        const mostVisibleSection = visibleEntries[0];
-
-        if (mostVisibleSection?.target.id) {
-          activateLink(mostVisibleSection.target.id);
-        }
+        links.forEach((link) => link.classList.remove("is-active"));
+        linksById.get(activeEntry.target.id)?.classList.add("is-active");
       },
-      {
-        rootMargin: "-32% 0px -55% 0px",
-        threshold: [0.05, 0.2, 0.5],
-      },
+      { rootMargin: "-32% 0px -55%", threshold: [0.05, 0.2, 0.5] },
     );
-
     sections.forEach((section) => observer.observe(section));
   }
 
   function initializeTypewriter() {
-    const textElement = select(SELECTORS.typewriterText);
-
-    if (!textElement) {
-      return;
-    }
-
-    if (USER_PREFERS_REDUCED_MOTION) {
-      textElement.textContent = SETTINGS.typewriterWords[0];
+    const element = select("#typewriterText");
+    if (!element) return;
+    if (prefersReducedMotion) {
+      element.textContent = SETTINGS.words[0];
       return;
     }
 
     let wordIndex = 0;
     let characterIndex = 0;
-    let isDeleting = false;
+    let deleting = false;
+    let timerId = 0;
 
-    const typeNextCharacter = () => {
-      const currentWord = SETTINGS.typewriterWords[wordIndex];
+    const update = () => {
+      const word = SETTINGS.words[wordIndex];
+      characterIndex += deleting ? -1 : 1;
+      element.textContent = word.slice(0, characterIndex);
+      let delay = deleting ? SETTINGS.deletingSpeed : SETTINGS.typingSpeed;
 
-      if (isDeleting) {
-        characterIndex -= 1;
-      } else {
-        characterIndex += 1;
+      if (!deleting && characterIndex === word.length) {
+        deleting = true;
+        delay = SETTINGS.wordPause;
+      } else if (deleting && characterIndex === 0) {
+        deleting = false;
+        wordIndex = (wordIndex + 1) % SETTINGS.words.length;
+        delay = 330;
       }
-
-      textElement.textContent = currentWord.slice(0, characterIndex);
-
-      let nextDelay = isDeleting
-        ? SETTINGS.deletingSpeed
-        : SETTINGS.typingSpeed;
-
-      if (!isDeleting && characterIndex === currentWord.length) {
-        isDeleting = true;
-        nextDelay = SETTINGS.wordPause;
-      } else if (isDeleting && characterIndex === 0) {
-        isDeleting = false;
-        wordIndex = (wordIndex + 1) % SETTINGS.typewriterWords.length;
-        nextDelay = 330;
-      }
-
-      window.setTimeout(typeNextCharacter, nextDelay);
+      timerId = window.setTimeout(update, delay);
     };
 
-    textElement.textContent = "";
-    window.setTimeout(typeNextCharacter, 700);
+    element.textContent = "";
+    timerId = window.setTimeout(update, 700);
+    addEventListener("pagehide", () => clearTimeout(timerId), { once: true });
   }
 
   function initializeCursorGlow() {
-    const glow = select(SELECTORS.cursorGlow);
-    const supportsFinePointer = window.matchMedia("(pointer: fine)").matches;
+    const glow = select("#cursorGlow");
+    if (!glow || !hasFinePointer || prefersReducedMotion) return;
 
-    if (!glow || !supportsFinePointer || USER_PREFERS_REDUCED_MOTION) {
-      return;
-    }
+    let targetX = -500;
+    let targetY = -500;
+    let currentX = targetX;
+    let currentY = targetY;
+    let frameId = 0;
 
-    let pointerX = -500;
-    let pointerY = -500;
-    let currentX = pointerX;
-    let currentY = pointerY;
-    let animationFrameId = 0;
-
-    const renderGlow = () => {
-      currentX += (pointerX - currentX) * 0.13;
-      currentY += (pointerY - currentY) * 0.13;
-      glow.style.transform = `translate3d(${currentX - 140}px, ${currentY - 140}px, 0)`;
-      animationFrameId = window.requestAnimationFrame(renderGlow);
+    const render = () => {
+      currentX += (targetX - currentX) * 0.16;
+      currentY += (targetY - currentY) * 0.16;
+      glow.style.transform = `translate3d(${currentX - 140}px,${currentY - 140}px,0)`;
+      const remaining = Math.abs(targetX - currentX) + Math.abs(targetY - currentY);
+      frameId = remaining > 0.3 ? requestAnimationFrame(render) : 0;
     };
 
-    window.addEventListener(
-      "pointermove",
-      (event) => {
-        pointerX = event.clientX;
-        pointerY = event.clientY;
-        glow.classList.add("is-visible");
-      },
-      { passive: true },
-    );
-
-    document.addEventListener("mouseleave", () => {
-      glow.classList.remove("is-visible");
-    });
-
-    animationFrameId = window.requestAnimationFrame(renderGlow);
-
-    window.addEventListener("pagehide", () => {
-      window.cancelAnimationFrame(animationFrameId);
-    });
+    addEventListener("pointermove", (event) => {
+      targetX = event.clientX;
+      targetY = event.clientY;
+      glow.classList.add("is-visible");
+      if (!frameId) frameId = requestAnimationFrame(render);
+    }, { passive: true });
+    document.addEventListener("mouseleave", () => glow.classList.remove("is-visible"));
+    addEventListener("pagehide", () => cancelAnimationFrame(frameId), { once: true });
   }
 
   function initializeTiltCards() {
-    const cards = selectAll(SELECTORS.tiltCard);
-    const supportsFinePointer = window.matchMedia("(pointer: fine)").matches;
+    if (!hasFinePointer || prefersReducedMotion) return;
 
-    if (
-      cards.length === 0 ||
-      !supportsFinePointer ||
-      USER_PREFERS_REDUCED_MOTION
-    ) {
-      return;
-    }
-
-    cards.forEach((card) => {
+    selectAll(".tilt-card").forEach((card) => {
       let frameId = 0;
-
-      const resetCard = () => {
-        window.cancelAnimationFrame(frameId);
-        card.style.transform = "rotateX(0deg) rotateY(0deg) translate3d(0, 0, 0)";
+      const reset = () => {
+        cancelAnimationFrame(frameId);
+        frameId = 0;
+        card.style.transform = "";
       };
 
-      const updateCard = (event) => {
-        const bounds = card.getBoundingClientRect();
-        const relativeX = (event.clientX - bounds.left) / bounds.width;
-        const relativeY = (event.clientY - bounds.top) / bounds.height;
-        const rotateY = (relativeX - 0.5) * SETTINGS.tiltMaximum * 2;
-        const rotateX = (0.5 - relativeY) * SETTINGS.tiltMaximum * 2;
-
-        window.cancelAnimationFrame(frameId);
-        frameId = window.requestAnimationFrame(() => {
-          card.style.transform = `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translate3d(0, -2px, 0)`;
+      card.addEventListener("pointermove", (event) => {
+        if (frameId) return;
+        frameId = requestAnimationFrame(() => {
+          const bounds = card.getBoundingClientRect();
+          const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+          const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+          const rotateY = x * SETTINGS.maximumTilt * 2;
+          const rotateX = -y * SETTINGS.maximumTilt * 2;
+          card.style.transform = `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-2px)`;
+          frameId = 0;
         });
-      };
-
-      card.addEventListener("pointermove", updateCard, { passive: true });
-      card.addEventListener("pointerleave", resetCard);
-      card.addEventListener("blur", resetCard, true);
+      }, { passive: true });
+      card.addEventListener("pointerleave", reset);
+      card.addEventListener("blur", reset, true);
     });
   }
 
   function initializeMagneticButtons() {
-    const buttons = selectAll(SELECTORS.magnetic);
-    const supportsFinePointer = window.matchMedia("(pointer: fine)").matches;
+    if (!hasFinePointer || prefersReducedMotion) return;
 
-    if (
-      buttons.length === 0 ||
-      !supportsFinePointer ||
-      USER_PREFERS_REDUCED_MOTION
-    ) {
-      return;
-    }
-
-    buttons.forEach((button) => {
-      const resetPosition = () => {
-        button.style.transform = "translate3d(0, 0, 0)";
+    selectAll(".magnetic").forEach((button) => {
+      let frameId = 0;
+      const reset = () => {
+        cancelAnimationFrame(frameId);
+        frameId = 0;
+        button.style.transform = "";
       };
 
-      button.addEventListener(
-        "pointermove",
-        (event) => {
+      button.addEventListener("pointermove", (event) => {
+        cancelAnimationFrame(frameId);
+        frameId = requestAnimationFrame(() => {
           const bounds = button.getBoundingClientRect();
           const offsetX = event.clientX - bounds.left - bounds.width / 2;
           const offsetY = event.clientY - bounds.top - bounds.height / 2;
-          const movementX = clamp(offsetX * 0.12, -8, 8);
-          const movementY = clamp(offsetY * 0.16, -6, 6);
-
-          button.style.transform = `translate3d(${movementX}px, ${movementY}px, 0)`;
-        },
-        { passive: true },
-      );
-
-      button.addEventListener("pointerleave", resetPosition);
-      button.addEventListener("blur", resetPosition);
+          const moveX = clamp(offsetX * 0.12, -8, 8);
+          const moveY = clamp(offsetY * 0.16, -6, 6);
+          button.style.transform = `translate3d(${moveX}px,${moveY}px,0)`;
+          frameId = 0;
+        });
+      }, { passive: true });
+      button.addEventListener("pointerleave", reset);
+      button.addEventListener("blur", reset);
     });
   }
 
-  async function copyTextToClipboard(text) {
+  async function copyToClipboard(text) {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(text);
       return;
     }
 
-    const temporaryTextArea = document.createElement("textarea");
-    temporaryTextArea.value = text;
-    temporaryTextArea.setAttribute("readonly", "");
-    temporaryTextArea.style.position = "fixed";
-    temporaryTextArea.style.opacity = "0";
-    temporaryTextArea.style.pointerEvents = "none";
-
-    document.body.appendChild(temporaryTextArea);
-    temporaryTextArea.select();
-
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.readOnly = true;
+    textArea.style.cssText = "position:fixed;opacity:0;pointer-events:none";
+    document.body.append(textArea);
+    textArea.select();
     const copied = document.execCommand("copy");
-    temporaryTextArea.remove();
-
-    if (!copied) {
-      throw new Error("O navegador bloqueou o comando de cópia.");
-    }
+    textArea.remove();
+    if (!copied) throw new Error("Cópia bloqueada pelo navegador.");
   }
 
   function initializeCopyButtons() {
-    const buttons = selectAll(SELECTORS.copyButton);
-
-    buttons.forEach((button) => {
+    selectAll(".copy-button").forEach((button) => {
+      let resetTimerId = 0;
       button.addEventListener("click", async () => {
-        const valueToCopy = button.dataset.copy?.trim();
+        const value = button.dataset.copy?.trim();
         const feedback = select(".copy-button__feedback", button);
-
-        if (!valueToCopy || !feedback) {
-          return;
-        }
+        if (!value || !feedback) return;
+        clearTimeout(resetTimerId);
 
         try {
-          await copyTextToClipboard(valueToCopy);
+          await copyToClipboard(value);
           button.classList.add("is-copied");
           feedback.textContent = "Copiado";
         } catch (error) {
-          console.error("[Portfólio] Não foi possível copiar:", error);
-          feedback.textContent = "Selecione e copie manualmente";
+          console.error("[Portfólio] Falha ao copiar:", error);
+          feedback.textContent = "Copie manualmente";
         }
 
-        window.setTimeout(() => {
+        resetTimerId = window.setTimeout(() => {
           button.classList.remove("is-copied");
           feedback.textContent = "";
-        }, 2200);
+        }, 2_200);
       });
     });
   }
 
   class ParticleField {
-    /**
-     * @param {HTMLCanvasElement} canvas
-     */
     constructor(canvas) {
       this.canvas = canvas;
       this.context = canvas.getContext("2d", { alpha: true });
       this.particles = [];
-      this.animationFrameId = 0;
       this.width = 0;
       this.height = 0;
-      this.pixelRatio = 1;
-      this.resizeTimer = 0;
-      this.isPageVisible = true;
+      this.frameId = 0;
+      this.resizeTimerId = 0;
+      this.previousFrameTime = 0;
+      this.visible = !document.hidden;
     }
 
     start() {
-      if (!this.context) {
-        throw new Error("Canvas 2D não é suportado neste navegador.");
-      }
-
+      if (!this.context) throw new Error("Canvas 2D indisponível.");
       this.resize();
       this.createParticles();
-      this.bindEvents();
-      this.render();
+      addEventListener("resize", this.scheduleResize, { passive: true });
+      document.addEventListener("visibilitychange", this.handleVisibility);
+      addEventListener("pagehide", this.stop, { once: true });
+      this.frameId = requestAnimationFrame(this.render);
     }
 
-    bindEvents() {
-      window.addEventListener(
-        "resize",
-        () => {
-          window.clearTimeout(this.resizeTimer);
-          this.resizeTimer = window.setTimeout(() => {
-            this.resize();
-            this.createParticles();
-          }, 140);
-        },
-        { passive: true },
-      );
+    scheduleResize = () => {
+      clearTimeout(this.resizeTimerId);
+      this.resizeTimerId = window.setTimeout(() => {
+        this.resize();
+        this.createParticles();
+      }, 180);
+    };
 
-      document.addEventListener("visibilitychange", () => {
-        this.isPageVisible = !document.hidden;
-
-        if (this.isPageVisible && !this.animationFrameId) {
-          this.render();
-        }
-      });
-
-      window.addEventListener("pagehide", () => this.stop());
-    }
+    handleVisibility = () => {
+      this.visible = !document.hidden;
+      if (this.visible && !this.frameId) {
+        this.previousFrameTime = 0;
+        this.frameId = requestAnimationFrame(this.render);
+      }
+    };
 
     resize() {
-      this.width = window.innerWidth;
-      this.height = window.innerHeight;
-      this.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-
-      this.canvas.width = Math.floor(this.width * this.pixelRatio);
-      this.canvas.height = Math.floor(this.height * this.pixelRatio);
+      this.width = innerWidth;
+      this.height = innerHeight;
+      const pixelRatio = Math.min(devicePixelRatio || 1, 1.5);
+      this.canvas.width = Math.floor(this.width * pixelRatio);
+      this.canvas.height = Math.floor(this.height * pixelRatio);
       this.canvas.style.width = `${this.width}px`;
       this.canvas.style.height = `${this.height}px`;
-
-      this.context.setTransform(
-        this.pixelRatio,
-        0,
-        0,
-        this.pixelRatio,
-        0,
-        0,
-      );
+      this.context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     }
 
     createParticles() {
-      const approximateCount = Math.floor((this.width * this.height) / 19000);
-      const particleCount = clamp(
-        approximateCount,
-        24,
+      const count = clamp(
+        Math.floor((this.width * this.height) / 28_000),
+        18,
         SETTINGS.maximumParticles,
       );
-
-      this.particles = Array.from({ length: particleCount }, (_, index) => {
-        const isRed = index % 7 === 0;
-
-        return {
-          x: Math.random() * this.width,
-          y: Math.random() * this.height,
-          radius: Math.random() * 1.4 + 0.35,
-          velocityX: (Math.random() - 0.5) * 0.23,
-          velocityY: (Math.random() - 0.5) * 0.23,
-          color: isRed ? "255, 39, 71" : "46, 145, 235",
-          opacity: Math.random() * 0.42 + 0.15,
-        };
-      });
+      this.particles = Array.from({ length: count }, (_, index) => ({
+        x: Math.random() * this.width,
+        y: Math.random() * this.height,
+        radius: Math.random() + 0.4,
+        velocityX: (Math.random() - 0.5) * 0.2,
+        velocityY: (Math.random() - 0.5) * 0.2,
+        color: index % 8 === 0 ? "255,39,71" : "46,145,235",
+        opacity: Math.random() * 0.32 + 0.12,
+      }));
     }
 
-    moveParticle(particle) {
+    move(particle) {
       particle.x += particle.velocityX;
       particle.y += particle.velocityY;
-
-      if (particle.x < -10) {
-        particle.x = this.width + 10;
-      } else if (particle.x > this.width + 10) {
-        particle.x = -10;
-      }
-
-      if (particle.y < -10) {
-        particle.y = this.height + 10;
-      } else if (particle.y > this.height + 10) {
-        particle.y = -10;
-      }
+      if (particle.x < -8) particle.x = this.width + 8;
+      else if (particle.x > this.width + 8) particle.x = -8;
+      if (particle.y < -8) particle.y = this.height + 8;
+      else if (particle.y > this.height + 8) particle.y = -8;
     }
 
     drawParticle(particle) {
       this.context.beginPath();
-      this.context.arc(
-        particle.x,
-        particle.y,
-        particle.radius,
-        0,
-        Math.PI * 2,
-      );
-      this.context.fillStyle = `rgba(${particle.color}, ${particle.opacity})`;
-      this.context.shadowColor = `rgba(${particle.color}, 0.5)`;
-      this.context.shadowBlur = 8;
+      this.context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+      this.context.fillStyle = `rgba(${particle.color},${particle.opacity})`;
       this.context.fill();
-      this.context.shadowBlur = 0;
     }
 
     drawConnections() {
-      const maximumDistance = SETTINGS.particleConnectionDistance;
+      const limit = SETTINGS.connectionDistance;
+      const squaredLimit = limit * limit;
+      const { context, particles } = this;
 
-      for (let firstIndex = 0; firstIndex < this.particles.length; firstIndex += 1) {
-        const firstParticle = this.particles[firstIndex];
+      for (let firstIndex = 0; firstIndex < particles.length; firstIndex += 1) {
+        const first = particles[firstIndex];
+        for (let secondIndex = firstIndex + 1; secondIndex < particles.length; secondIndex += 1) {
+          const second = particles[secondIndex];
+          const differenceX = first.x - second.x;
+          const differenceY = first.y - second.y;
+          const squaredDistance = differenceX ** 2 + differenceY ** 2;
+          if (squaredDistance >= squaredLimit) continue;
 
-        for (
-          let secondIndex = firstIndex + 1;
-          secondIndex < this.particles.length;
-          secondIndex += 1
-        ) {
-          const secondParticle = this.particles[secondIndex];
-          const differenceX = firstParticle.x - secondParticle.x;
-          const differenceY = firstParticle.y - secondParticle.y;
-          const distanceSquared =
-            differenceX * differenceX + differenceY * differenceY;
-
-          if (distanceSquared > maximumDistance * maximumDistance) {
-            continue;
-          }
-
-          const distance = Math.sqrt(distanceSquared);
-          const opacity = (1 - distance / maximumDistance) * 0.11;
-
-          this.context.beginPath();
-          this.context.moveTo(firstParticle.x, firstParticle.y);
-          this.context.lineTo(secondParticle.x, secondParticle.y);
-          this.context.strokeStyle = `rgba(35, 129, 219, ${opacity})`;
-          this.context.lineWidth = 0.7;
-          this.context.stroke();
+          const opacity = (1 - Math.sqrt(squaredDistance) / limit) * 0.08;
+          context.beginPath();
+          context.moveTo(first.x, first.y);
+          context.lineTo(second.x, second.y);
+          context.strokeStyle = `rgba(35,129,219,${opacity})`;
+          context.lineWidth = 0.6;
+          context.stroke();
         }
       }
     }
 
-    render = () => {
-      if (!this.isPageVisible) {
-        this.animationFrameId = 0;
+    render = (time) => {
+      if (!this.visible) {
+        this.frameId = 0;
         return;
       }
 
+      this.frameId = requestAnimationFrame(this.render);
+      if (time - this.previousFrameTime < SETTINGS.particleFrameInterval) return;
+      this.previousFrameTime = time;
       this.context.clearRect(0, 0, this.width, this.height);
-
       this.particles.forEach((particle) => {
-        this.moveParticle(particle);
+        this.move(particle);
         this.drawParticle(particle);
       });
-
       this.drawConnections();
-      this.animationFrameId = window.requestAnimationFrame(this.render);
     };
 
-    stop() {
-      window.cancelAnimationFrame(this.animationFrameId);
-      window.clearTimeout(this.resizeTimer);
-      this.animationFrameId = 0;
-    }
+    stop = () => {
+      cancelAnimationFrame(this.frameId);
+      clearTimeout(this.resizeTimerId);
+      removeEventListener("resize", this.scheduleResize);
+      document.removeEventListener("visibilitychange", this.handleVisibility);
+      this.frameId = 0;
+    };
   }
 
-  function initializeParticleField() {
-    const canvas = select(SELECTORS.particleCanvas);
-
-    if (
-      !(canvas instanceof HTMLCanvasElement) ||
-      USER_PREFERS_REDUCED_MOTION
-    ) {
+  function initializeParticles() {
+    const canvas = select("#particleCanvas");
+    const smallOrTouchDevice =
+      innerWidth < 720 || window.matchMedia("(pointer: coarse)").matches;
+    if (!(canvas instanceof HTMLCanvasElement) || prefersReducedMotion || smallOrTouchDevice) {
+      canvas?.remove();
       return;
     }
-
-    const particleField = new ParticleField(canvas);
-    particleField.start();
+    new ParticleField(canvas).start();
   }
 
   function initializeApplication() {
-    const features = [
-      ["estado inicial", initializePageState],
-      ["ano atual", initializeCurrentYear],
-      ["cabeçalho", initializeHeaderState],
-      ["menu móvel", initializeMobileMenu],
-      ["revelação de conteúdo", initializeRevealAnimations],
-      ["navegação ativa", initializeActiveNavigation],
+    [
+      ["página", initializePage],
+      ["cabeçalho", initializeHeader],
+      ["menu", initializeMenu],
+      ["revelação", initializeReveal],
+      ["navegação", initializeActiveNavigation],
       ["texto digitado", initializeTypewriter],
       ["brilho do cursor", initializeCursorGlow],
-      ["inclinação dos cartões", initializeTiltCards],
+      ["inclinação", initializeTiltCards],
       ["botões magnéticos", initializeMagneticButtons],
-      ["cópia de contato", initializeCopyButtons],
-      ["partículas", initializeParticleField],
-    ];
-
-    features.forEach(([featureName, initializer]) => {
-      safelyInitialize(featureName, initializer);
-    });
+      ["cópia", initializeCopyButtons],
+      ["partículas", initializeParticles],
+    ].forEach(([name, initializer]) => safeInitialize(name, initializer));
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializeApplication, {
-      once: true,
-    });
+    document.addEventListener("DOMContentLoaded", initializeApplication, { once: true });
   } else {
     initializeApplication();
   }
