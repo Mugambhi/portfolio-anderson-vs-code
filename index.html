@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Portfólio pessoal de Anderson Mugambhi, estudante e desenvolvedor apaixonado por programação."
+    />
+    <meta name="theme-color" content="#05070d" />
+    <title>Anderson Mugambhi | Programador</title>
+
+    <!-- O CSS foi mantido em um arquivo separado para facilitar a edição. -->
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- O JavaScript usa defer para executar somente depois do HTML ser carregado. -->
+    <script src="script.js" defer></script>
+  </head>
+
+  <body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
+    <!-- Elementos decorativos do fundo. -->
+    <canvas id="particleCanvas" class="particle-canvas" aria-hidden="true"></canvas>
+    <div class="background-grid" aria-hidden="true"></div>
+    <div class="background-glow background-glow--blue" aria-hidden="true"></div>
+    <div class="background-glow background-glow--red" aria-hidden="true"></div>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+
+    <header class="site-header" id="inicio">
+      <nav class="navigation container" aria-label="Navegação principal">
+        <a class="brand" href="#inicio" aria-label="Voltar ao início">
+          <span class="brand__bracket" aria-hidden="true">&lt;</span>
+          <span class="brand__name">AM</span>
+          <span class="brand__slash" aria-hidden="true">/</span>
+          <span class="brand__bracket" aria-hidden="true">&gt;</span>
+        </a>
+
+        <button
+          class="menu-toggle"
+          id="menuToggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="navigationLinks"
+          aria-label="Abrir menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <ul class="navigation__links" id="navigationLinks">
+          <li><a class="navigation__link is-active" href="#inicio">Início</a></li>
+          <li><a class="navigation__link" href="#sobre">Sobre</a></li>
+          <li><a class="navigation__link" href="#contato">Contato</a></li>
+        </ul>
+
+        <div class="system-status" aria-label="Status: disponível para novos projetos">
+          <span class="system-status__dot" aria-hidden="true"></span>
+          <span class="system-status__text">Disponível</span>
+        </div>
+      </nav>
+    </header>
+
+    <main id="conteudo">
+      <section class="hero section container" aria-labelledby="hero-title">
+        <div class="hero__content reveal">
+          <div class="terminal-label">
+            <span class="terminal-label__dot terminal-label__dot--red"></span>
+            <span class="terminal-label__dot terminal-label__dot--yellow"></span>
+            <span class="terminal-label__dot terminal-label__dot--blue"></span>
+            <span class="terminal-label__path">~/portfolio/anderson</span>
+          </div>
+
+          <p class="hero__eyebrow">
+            <span class="hero__prompt" aria-hidden="true">$</span>
+            Olá, eu sou
+          </p>
+
+          <h1 class="hero__title" id="hero-title" data-text="Anderson Mugambhi">
+            Anderson
+            <span class="hero__title-accent">Mugambhi</span>
+          </h1>
+
+          <div class="hero__role" aria-label="Minha área profissional">
+            <span class="hero__role-prefix">&gt;</span>
+            <span id="typewriterText">Programador</span>
+            <span class="typing-cursor" aria-hidden="true"></span>
+          </div>
+
+          <p class="hero__description">
+            Transformo ideias em experiências digitais. Escrevo código com foco em
+            organização, criatividade e evolução constante.
+          </p>
+
+          <div class="hero__actions">
+            <a class="button button--primary magnetic" href="#contato">
+              <span class="button__label">Entrar em contato</span>
+              <span class="button__arrow" aria-hidden="true">↗</span>
+            </a>
+
+            <a class="button button--ghost magnetic" href="#sobre">
+              <span class="button__label">Conhecer minha história</span>
+              <span class="button__line" aria-hidden="true"></span>
+            </a>
+          </div>
+
+          <div class="hero__meta" aria-label="Informações rápidas">
+            <div class="meta-item">
+              <span class="meta-item__number">01</span>
+              <span class="meta-item__label">Mente curiosa</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-item__number">∞</span>
+              <span class="meta-item__label">Vontade de aprender</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-item__number">100%</span>
+              <span class="meta-item__label">Foco no código</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero__visual reveal" aria-hidden="true">
+          <div class="code-window tilt-card">
+            <div class="code-window__topbar">
+              <div class="code-window__controls">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span class="code-window__filename">anderson.js</span>
+              <span class="code-window__status">●</span>
+            </div>
+
+            <div class="code-window__body">
+              <div class="code-line">
+                <span class="code-line__number">01</span>
+                <code><span class="code-purple">const</span> <span class="code-blue">developer</span> = {</code>
+              </div>
+              <div class="code-line">
+                <span class="code-line__number">02</span>
+                <code>&nbsp;&nbsp;<span class="code-red">name</span>: <span class="code-yellow">"Anderson Mugambhi"</span>,</code>
+              </div>
+              <div class="code-line">
+                <span class="code-line__number">03</span>
+                <code>&nbsp;&nbsp;<span class="code-red">focus</span>: <span class="code-yellow">"Web Development"</span>,</code>
+              </div>
+              <div class="code-line">
+                <span class="code-line__number">04</span>
+                <code>&nbsp;&nbsp;<span class="code-red">passion</span>: <span class="code-purple">true</span>,</code>
+              </div>
+              <div class="code-line">
+                <span class="code-line__number">05</span>
+                <code>&nbsp;&nbsp;<span class="code-red">learning</span>: <span class="code-yellow">"always"</span>,</code>
+              </div>
+              <div class="code-line">
+                <span class="code-line__number">06</span>
+                <code>&nbsp;&nbsp;<span class="code-blue">build</span>() {</code>
+              </div>
+              <div class="code-line">
+                <span class="code-line__number">07</span>
+                <code>&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-purple">return</span> <span class="code-yellow">"ideas into reality"</span>;</code>
+              </div>
+              <div class="code-line">
+                <span class="code-line__number">08</span>
+                <code>&nbsp;&nbsp;}</code>
+              </div>
+              <div class="code-line">
+                <span class="code-line__number">09</span>
+                <code>};</code>
+              </div>
+              <div class="code-line code-line--active">
+                <span class="code-line__number">10</span>
+                <code><span class="code-blue">developer</span>.<span class="code-red">build</span>();<span class="code-caret"></span></code>
+              </div>
+            </div>
+
+            <div class="code-window__footer">
+              <span>UTF-8</span>
+              <span>JavaScript</span>
+              <span>Ln 10, Col 19</span>
+            </div>
+          </div>
+
+          <div class="orbit orbit--one"></div>
+          <div class="orbit orbit--two"></div>
+          <div class="floating-tag floating-tag--html">HTML</div>
+          <div class="floating-tag floating-tag--css">CSS</div>
+          <div class="floating-tag floating-tag--js">JS</div>
+        </div>
+
+        <a class="scroll-indicator" href="#sobre" aria-label="Rolar para a seção sobre">
+          <span class="scroll-indicator__text">SCROLL</span>
+          <span class="scroll-indicator__track">
+            <span class="scroll-indicator__dot"></span>
+          </span>
+        </a>
+      </section>
+
+      <section class="about section container" id="sobre" aria-labelledby="about-title">
+        <div class="section-heading reveal">
+          <span class="section-heading__index">01.</span>
+          <div>
+            <p class="section-heading__eyebrow">SOBRE MIM</p>
+            <h2 class="section-heading__title" id="about-title">Paixão por programar</h2>
+          </div>
+          <span class="section-heading__line" aria-hidden="true"></span>
+        </div>
+
+        <div class="about__grid">
+          <article class="passion-card tilt-card reveal">
+            <div class="passion-card__corner passion-card__corner--top"></div>
+            <div class="passion-card__corner passion-card__corner--bottom"></div>
+            <span class="passion-card__quote" aria-hidden="true">“</span>
+
+            <p class="passion-card__text">
+              Programar, para mim, é mais do que escrever comandos: é transformar
+              problemas em possibilidades. Cada linha de código representa uma ideia
+              ganhando forma, cada erro ensina uma nova maneira de pensar e cada projeto
+              concluído mostra o quanto ainda posso evoluir.
+            </p>
+
+            <p class="passion-card__text passion-card__text--secondary">
+              Minha paixão nasce da liberdade de criar soluções do zero. Quero construir
+              sistemas úteis, rápidos e bem organizados, sempre aprendendo novas
+              tecnologias e elevando a qualidade do meu trabalho.
+            </p>
+
+            <footer class="passion-card__signature">
+              <span class="passion-card__signature-line"></span>
+              <span>Anderson Mugambhi</span>
+            </footer>
+          </article>
+
+          <aside class="principles reveal" aria-label="Meus princípios de desenvolvimento">
+            <article class="principle-card">
+              <span class="principle-card__icon">01</span>
+              <div>
+                <h3 class="principle-card__title">Curiosidade</h3>
+                <p class="principle-card__text">Entender como cada tecnologia funciona.</p>
+              </div>
+            </article>
+
+            <article class="principle-card">
+              <span class="principle-card__icon">02</span>
+              <div>
+                <h3 class="principle-card__title">Disciplina</h3>
+                <p class="principle-card__text">Evoluir um pouco a cada novo projeto.</p>
+              </div>
+            </article>
+
+            <article class="principle-card">
+              <span class="principle-card__icon">03</span>
+              <div>
+                <h3 class="principle-card__title">Qualidade</h3>
+                <p class="principle-card__text">Criar código legível, útil e confiável.</p>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+
+      <section class="contact section container" id="contato" aria-labelledby="contact-title">
+        <div class="section-heading reveal">
+          <span class="section-heading__index">02.</span>
+          <div>
+            <p class="section-heading__eyebrow">CONTATO</p>
+            <h2 class="section-heading__title" id="contact-title">Vamos conversar</h2>
+          </div>
+          <span class="section-heading__line" aria-hidden="true"></span>
+        </div>
+
+        <div class="contact__intro reveal">
+          <p>
+            Estes dois campos foram preparados para você editar diretamente no VS Code.
+            Procure pelos comentários <strong>EDITE AQUI</strong> dentro deste HTML.
+          </p>
+        </div>
+
+        <div class="contact__grid">
+          <article class="contact-card contact-card--phone tilt-card reveal">
+            <div class="contact-card__glow" aria-hidden="true"></div>
+            <div class="contact-card__icon" aria-hidden="true">TEL</div>
+            <p class="contact-card__label">TELEFONE</p>
+
+            <!-- EDITE AQUI: troque o número no href e também no texto. -->
+            <a
+              class="contact-card__value"
+              href="tel:+55 (11)98692-0831"
+              data-contact-value="(11)98692-0831"
+            >
+              (11)98692-0831
+            </a>
+
+            <button
+              class="copy-button"
+              type="button"
+              data-copy="(11)98692-0831"
+              aria-label="Copiar telefone"
+            >
+              <span class="copy-button__text">Copiar número</span>
+              <span class="copy-button__feedback" aria-live="polite"></span>
+            </button>
+          </article>
+
+          <article class="contact-card contact-card--email tilt-card reveal">
+            <div class="contact-card__glow" aria-hidden="true"></div>
+            <div class="contact-card__icon" aria-hidden="true">MAIL</div>
+            <p class="contact-card__label">E-MAIL</p>
+
+            <!-- EDITE AQUI: troque o endereço no href e também no texto. -->
+            <a
+              class="contact-card__value"
+              href="mailto:andersonms888@gmail.com"
+              data-contact-value="andersonms888@gmail.com"
+            >
+              andersonms888@gmail.com
+            </a>
+
+            <button
+              class="copy-button"
+              type="button"
+              data-copy="andersonms888@gmail.com"
+              aria-label="Copiar e-mail"
+            >
+              <span class="copy-button__text">Copiar e-mail</span>
+              <span class="copy-button__feedback" aria-live="polite"></span>
+            </button>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer__line" aria-hidden="true"></div>
+      <div class="container site-footer__content">
+        <p>
+          <span class="site-footer__prompt" aria-hidden="true">&gt;</span>
+          Desenvolvido por <strong>Anderson Mugambhi</strong>
+        </p>
+        <p class="site-footer__year">© <span id="currentYear"></span></p>
+      </div>
+    </footer>
+
+    <noscript>
+      <div class="noscript-message">
+        Ative o JavaScript para visualizar todas as animações do portfólio.
+      </div>
+    </noscript>
+  </body>
+</html>
